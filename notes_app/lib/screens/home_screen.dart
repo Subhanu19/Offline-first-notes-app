@@ -34,6 +34,16 @@ class _HomeScreenState extends State<HomeScreen>
   late Animation<double> _headerFadeAnimation;
   late Animation<double> _searchWidthAnimation;
 
+  // Pastel card colors cycling
+  static const List<Color> _cardColors = [
+    Color(0xFFFFE8E8), // soft rose
+    Color(0xFFFFF3E0), // soft amber
+    Color(0xFFE8F5E9), // soft mint
+    Color(0xFFE8EAF6), // soft lavender
+    Color(0xFFFCE4EC), // soft pink
+    Color(0xFFE0F7FA), // soft cyan
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -124,16 +134,15 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    final bgColor = isDark ? const Color(0xFF0F0F13) : const Color(0xFFF5F4F8);
-    final cardBg = isDark ? const Color(0xFF1C1C24) : Colors.white;
-    final accentColor = const Color(0xFF7C6FE0);
-    final accentLight = const Color(0xFFB8AFFF);
-    final textPrimary = isDark ? const Color(0xFFEDEDFF) : const Color(0xFF1A1A2E);
-    final textSecondary = isDark ? const Color(0xFF8888AA) : const Color(0xFF888899);
-    final surfaceColor = isDark ? const Color(0xFF16161F) : const Color(0xFFEEEDF4);
+    // Light pastel theme matching the screenshot
+    const bgColor = Color(0xFFF3F2F8);
+    const cardBg = Colors.white;
+    const accentColor = Color(0xFF6C63FF);
+    const accentLight = Color(0xFFB8AFFF);
+    const textPrimary = Color(0xFF1A1A2E);
+    const textSecondary = Color(0xFF888899);
+    const surfaceColor = Color(0xFFEEEDF4);
+    const bool isDark = false;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -144,21 +153,19 @@ class _HomeScreenState extends State<HomeScreen>
             AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               decoration: BoxDecoration(
-                color: _isScrolled
-                    ? (isDark ? const Color(0xFF13131A) : Colors.white)
-                    : bgColor,
+                color: _isScrolled ? Colors.white : bgColor,
                 boxShadow: _isScrolled
                     ? [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 20,
+                          color: Colors.black.withOpacity(0.07),
+                          blurRadius: 16,
                           offset: const Offset(0, 4),
                         )
                       ]
                     : [],
               ),
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -173,13 +180,13 @@ class _HomeScreenState extends State<HomeScreen>
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                const Text(
                                   'My Notes',
                                   style: TextStyle(
-                                    fontSize: 28,
+                                    fontSize: 30,
                                     fontWeight: FontWeight.w800,
                                     color: textPrimary,
-                                    letterSpacing: -0.5,
+                                    letterSpacing: -0.8,
                                     height: 1.1,
                                   ),
                                 ),
@@ -189,7 +196,7 @@ class _HomeScreenState extends State<HomeScreen>
                                   builder: (context, notes, _) {
                                     return Text(
                                       '${notes.length} note${notes.length == 1 ? '' : 's'}',
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 13,
                                         color: textSecondary,
                                         fontWeight: FontWeight.w500,
@@ -199,14 +206,13 @@ class _HomeScreenState extends State<HomeScreen>
                                 ),
                               ],
                             ),
-                            _buildSettingsButton(
-                                context, isDark, cardBg, textPrimary),
+                            _buildMenuButton(context),
                           ],
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 18),
 
                     // Search bar
                     SlideTransition(
@@ -219,52 +225,47 @@ class _HomeScreenState extends State<HomeScreen>
                             duration: const Duration(milliseconds: 300),
                             decoration: BoxDecoration(
                               color: _isSearchFocused
-                                  ? cardBg
-                                  : surfaceColor,
-                              borderRadius: BorderRadius.circular(18),
+                                  ? Colors.white
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(14),
                               border: Border.all(
                                 color: _isSearchFocused
-                                    ? accentColor.withOpacity(0.5)
+                                    ? accentColor.withOpacity(0.45)
                                     : Colors.transparent,
                                 width: 1.5,
                               ),
-                              boxShadow: _isSearchFocused
-                                  ? [
-                                      BoxShadow(
-                                        color: accentColor.withOpacity(0.15),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 4),
-                                      )
-                                    ]
-                                  : [],
+                              boxShadow: [
+                                BoxShadow(
+                                  color: _isSearchFocused
+                                      ? accentColor.withOpacity(0.12)
+                                      : Colors.black.withOpacity(0.04),
+                                  blurRadius: _isSearchFocused ? 18 : 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: TextField(
                               controller: _searchController,
                               onChanged: (value) =>
                                   setState(() => _searchQuery = value),
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: textPrimary,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
                               ),
                               decoration: InputDecoration(
-                                hintText: 'Search notes…',
-                                hintStyle: TextStyle(
+                                hintText: 'Search notes...',
+                                hintStyle: const TextStyle(
                                   color: textSecondary,
                                   fontWeight: FontWeight.w400,
+                                  fontSize: 14,
                                 ),
-                                prefixIcon: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 200),
-                                  child: Icon(
-                                    _isSearchFocused
-                                        ? Icons.search
-                                        : Icons.search_rounded,
-                                    key: ValueKey(_isSearchFocused),
-                                    color: _isSearchFocused
-                                        ? accentColor
-                                        : textSecondary,
-                                    size: 20,
-                                  ),
+                                prefixIcon: Icon(
+                                  Icons.search_rounded,
+                                  color: _isSearchFocused
+                                      ? accentColor
+                                      : textSecondary,
+                                  size: 20,
                                 ),
                                 suffixIcon: _searchQuery.isNotEmpty
                                     ? GestureDetector(
@@ -277,11 +278,11 @@ class _HomeScreenState extends State<HomeScreen>
                                         child: Container(
                                           margin: const EdgeInsets.all(10),
                                           decoration: BoxDecoration(
-                                            color:
-                                                textSecondary.withOpacity(0.15),
+                                            color: textSecondary
+                                                .withOpacity(0.12),
                                             shape: BoxShape.circle,
                                           ),
-                                          child: Icon(
+                                          child: const Icon(
                                             Icons.close_rounded,
                                             size: 14,
                                             color: textSecondary,
@@ -292,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 border: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 16,
-                                  vertical: 15,
+                                  vertical: 14,
                                 ),
                               ),
                             ),
@@ -301,46 +302,45 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                     ),
 
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 16),
 
-                    // Filter chips
+                    // Filter chips with counts
                     SlideTransition(
                       position: _headerSlideAnimation,
                       child: FadeTransition(
                         opacity: _headerFadeAnimation,
-                        child: Row(
-                          children: [
-                            _buildModernChip(
-                              label: 'All',
-                              icon: Icons.grid_view_rounded,
-                              isSelected: !_showPinnedOnly,
-                              accentColor: accentColor,
-                              accentLight: accentLight,
-                              surfaceColor: surfaceColor,
-                              textSecondary: textSecondary,
-                              isDark: isDark,
-                              onTap: () =>
-                                  setState(() => _showPinnedOnly = false),
-                            ),
-                            const SizedBox(width: 10),
-                            _buildModernChip(
-                              label: 'Pinned',
-                              icon: Icons.push_pin_rounded,
-                              isSelected: _showPinnedOnly,
-                              accentColor: accentColor,
-                              accentLight: accentLight,
-                              surfaceColor: surfaceColor,
-                              textSecondary: textSecondary,
-                              isDark: isDark,
-                              onTap: () =>
-                                  setState(() => _showPinnedOnly = true),
-                            ),
-                          ],
+                        child: ValueListenableBuilder<List<Note>>(
+                          valueListenable: _appState.notesNotifier,
+                          builder: (context, notes, _) {
+                            final pinnedCount =
+                                notes.where((n) => n.isFavorite).length;
+                            return Row(
+                              children: [
+                                _buildPillChip(
+                                  label: 'All Notes',
+                                  count: notes.length,
+                                  isSelected: !_showPinnedOnly,
+                                  accentColor: accentColor,
+                                  onTap: () =>
+                                      setState(() => _showPinnedOnly = false),
+                                ),
+                                const SizedBox(width: 10),
+                                _buildPillChip(
+                                  label: 'Favorites',
+                                  count: pinnedCount,
+                                  isSelected: _showPinnedOnly,
+                                  accentColor: accentColor,
+                                  onTap: () =>
+                                      setState(() => _showPinnedOnly = true),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),
@@ -355,56 +355,26 @@ class _HomeScreenState extends State<HomeScreen>
 
                   if (filteredNotes.isEmpty) {
                     return _buildEmptyState(
-                        isDark, textPrimary, textSecondary, accentColor);
+                        textPrimary, textSecondary, accentColor);
                   }
 
                   return ListView.builder(
                     controller: _scrollController,
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 110),
                     itemCount: filteredNotes.length,
                     itemBuilder: (context, index) {
                       final note = filteredNotes[index];
+                      final cardColor = _cardColors[index % _cardColors.length];
                       return _AnimatedNoteItem(
                         key: Key('item_$index'),
                         index: index,
-                        child: Dismissible(
-                          key: Key(note.id),
-                          direction: DismissDirection.endToStart,
-                          background: Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.red.withOpacity(0.0),
-                                  Colors.red.shade400,
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            alignment: Alignment.centerRight,
-                            padding: const EdgeInsets.only(right: 24),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.delete_rounded,
-                                  color: Colors.white,
-                                  size: 26,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Delete',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          onDismissed: (direction) {
+                        child: _buildPastelNoteCard(
+                          note: note,
+                          cardColor: cardColor,
+                          textPrimary: textPrimary,
+                          textSecondary: textSecondary,
+                          accentColor: accentColor,
+                          onDelete: () {
                             HapticFeedback.mediumImpact();
                             _appState.deleteNote(note.id);
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -426,14 +396,6 @@ class _HomeScreenState extends State<HomeScreen>
                               ),
                             );
                           },
-                          child: _buildNoteCard(
-                            note: note,
-                            isDark: isDark,
-                            cardBg: cardBg,
-                            textPrimary: textPrimary,
-                            textSecondary: textSecondary,
-                            accentColor: accentColor,
-                          ),
                         ),
                       );
                     },
@@ -449,25 +411,29 @@ class _HomeScreenState extends State<HomeScreen>
       floatingActionButton: ScaleTransition(
         scale: _fabScaleAnimation,
         child: Container(
+          width: 56,
+          height: 56,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              colors: [accentColor, const Color(0xFF5A4FCC)],
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              colors: [Color(0xFF7C6FE0), Color(0xFF5A4FCC)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             boxShadow: [
               BoxShadow(
-                color: accentColor.withOpacity(0.45),
-                blurRadius: 24,
+                color: accentColor.withOpacity(0.4),
+                blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
             ],
           ),
           child: Material(
             color: Colors.transparent,
+            shape: const CircleBorder(),
             child: InkWell(
-              borderRadius: BorderRadius.circular(20),
+              customBorder: const CircleBorder(),
+              splashColor: Colors.white24,
               onTap: () async {
                 HapticFeedback.mediumImpact();
                 final result = await Navigator.push(
@@ -510,26 +476,10 @@ class _HomeScreenState extends State<HomeScreen>
                   );
                 }
               },
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.add_rounded,
-                        color: Colors.white, size: 22),
-                    const SizedBox(width: 8),
-                    Text(
-                      'New Note',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ],
-                ),
+              child: const Icon(
+                Icons.add_rounded,
+                color: Colors.white,
+                size: 28,
               ),
             ),
           ),
@@ -538,8 +488,8 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildSettingsButton(
-      BuildContext context, bool isDark, Color cardBg, Color textPrimary) {
+  // ─── Menu (···) button ───────────────────────────────────────────
+  Widget _buildMenuButton(BuildContext context) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -553,39 +503,35 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         );
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 44,
-        height: 44,
+      child: Container(
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(14),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
-        child: Icon(
-          Icons.settings_outlined,
-          color: textPrimary,
+        child: const Icon(
+          Icons.more_horiz_rounded,
+          color: Color(0xFF1A1A2E),
           size: 20,
         ),
       ),
     );
   }
 
-  Widget _buildModernChip({
+  // ─── Pill chip with count badge ──────────────────────────────────
+  Widget _buildPillChip({
     required String label,
-    required IconData icon,
+    required int count,
     required bool isSelected,
     required Color accentColor,
-    required Color accentLight,
-    required Color surfaceColor,
-    required Color textSecondary,
-    required bool isDark,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
@@ -595,31 +541,54 @@ class _HomeScreenState extends State<HomeScreen>
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? accentColor.withOpacity(0.15) : surfaceColor,
+          color: isSelected ? accentColor : Colors.white,
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: isSelected ? accentColor.withOpacity(0.4) : Colors.transparent,
-            width: 1.5,
-          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: accentColor.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  )
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  )
+                ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 15,
-              color: isSelected ? accentColor : textSecondary,
-            ),
-            const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? accentColor : textSecondary,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.white : const Color(0xFF888899),
                 letterSpacing: 0.1,
+              ),
+            ),
+            const SizedBox(width: 7),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.white.withOpacity(0.25)
+                    : const Color(0xFFEEEDF4),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: isSelected ? Colors.white : const Color(0xFF888899),
+                ),
               ),
             ),
           ],
@@ -628,15 +597,16 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildNoteCard({
+  // ─── Pastel note card ────────────────────────────────────────────
+  Widget _buildPastelNoteCard({
     required Note note,
-    required bool isDark,
-    required Color cardBg,
+    required Color cardColor,
     required Color textPrimary,
     required Color textSecondary,
     required Color accentColor,
+    required VoidCallback onDelete,
   }) {
-    return GestureDetector(
+    return _HoverNoteCard(
       onTap: () {
         HapticFeedback.lightImpact();
         Navigator.push(
@@ -659,130 +629,98 @@ class _HomeScreenState extends State<HomeScreen>
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 14),
         decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(20),
+          color: cardColor,
+          borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.25 : 0.05),
-              blurRadius: 16,
+              color: cardColor.withOpacity(0.6),
+              blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Stack(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Subtle accent line on left if pinned
-              if (note.isFavorite)
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 3.5,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [accentColor, accentColor.withOpacity(0.4)],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
+              // Title row
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      note.title.isEmpty ? 'Untitled' : note.title,
+                      style: TextStyle(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w700,
+                        color: textPrimary,
+                        letterSpacing: -0.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Star / pin button
+                  _buildStarButton(note, accentColor),
+                ],
+              ),
+
+              if (note.content.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  note.content,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: textSecondary,
+                    height: 1.55,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+
+              const SizedBox(height: 14),
+
+              // Bottom row: time + trash
+              Row(
+                children: [
+                  const Icon(
+                    Icons.access_time_rounded,
+                    size: 12,
+                    color: Color(0xFFAAAAAA),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _formatDate(note.updatedAt),
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      color: Color(0xFFAAAAAA),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const Spacer(),
+                  // Trash button
+                  GestureDetector(
+                    onTap: onDelete,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.delete_outline_rounded,
+                        size: 17,
+                        color: Color(0xFFBBBBBB),
                       ),
                     ),
                   ),
-                ),
-
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                    note.isFavorite ? 18 : 16, 16, 16, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            note.title.isEmpty ? 'Untitled' : note.title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: textPrimary,
-                              letterSpacing: -0.2,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        _buildPinButton(note, accentColor, textSecondary, isDark),
-                      ],
-                    ),
-
-                    if (note.content.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        note.content,
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          color: textSecondary,
-                          height: 1.5,
-                          fontWeight: FontWeight.w400,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-
-                    const SizedBox(height: 12),
-
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.access_time_rounded,
-                          size: 12,
-                          color: textSecondary.withOpacity(0.6),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _formatDate(note.updatedAt),
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: textSecondary.withOpacity(0.6),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        if (note.isFavorite) ...[
-                          const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: accentColor.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.push_pin_rounded,
-                                    size: 10, color: accentColor),
-                                const SizedBox(width: 3),
-                                Text(
-                                  'Pinned',
-                                  style: TextStyle(
-                                    fontSize: 10.5,
-                                    color: accentColor,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
+                ],
               ),
             ],
           ),
@@ -791,8 +729,8 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildPinButton(
-      Note note, Color accentColor, Color textSecondary, bool isDark) {
+  // ─── Star / pin button ───────────────────────────────────────────
+  Widget _buildStarButton(Note note, Color accentColor) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -806,22 +744,12 @@ class _HomeScreenState extends State<HomeScreen>
         builder: (context, scale, child) {
           return Transform.scale(
             scale: scale,
-            child: Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: note.isFavorite
-                    ? accentColor.withOpacity(0.15)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                note.isFavorite
-                    ? Icons.push_pin_rounded
-                    : Icons.push_pin_outlined,
-                size: 18,
-                color: note.isFavorite ? accentColor : textSecondary,
-              ),
+            child: Icon(
+              note.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
+              size: 22,
+              color: note.isFavorite
+                  ? const Color(0xFFFFB400)
+                  : const Color(0xFFCCCCCC),
             ),
           );
         },
@@ -830,7 +758,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildEmptyState(
-      bool isDark, Color textPrimary, Color textSecondary, Color accentColor) {
+      Color textPrimary, Color textSecondary, Color accentColor) {
     return Center(
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0.0, end: 1.0),
@@ -857,7 +785,7 @@ class _HomeScreenState extends State<HomeScreen>
               ),
               child: Icon(
                 _showPinnedOnly
-                    ? Icons.push_pin_outlined
+                    ? Icons.star_outline_rounded
                     : Icons.note_add_outlined,
                 size: 36,
                 color: accentColor.withOpacity(0.7),
@@ -865,7 +793,7 @@ class _HomeScreenState extends State<HomeScreen>
             ),
             const SizedBox(height: 20),
             Text(
-              _showPinnedOnly ? 'No pinned notes' : 'No notes found',
+              _showPinnedOnly ? 'No favorites yet' : 'No notes found',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -878,8 +806,8 @@ class _HomeScreenState extends State<HomeScreen>
               _searchQuery.isNotEmpty
                   ? 'Try a different search term'
                   : _showPinnedOnly
-                      ? 'Pin a note to see it here'
-                      : 'Tap + New Note to get started',
+                      ? 'Star a note to see it here'
+                      : 'Tap + to create your first note',
               style: TextStyle(
                 fontSize: 14,
                 color: textSecondary,
@@ -905,7 +833,61 @@ class _HomeScreenState extends State<HomeScreen>
   }
 }
 
-// ─── Animated Note Item (staggered entrance) ────────────────────────────────
+// ─── Hover-effect wrapper (scales on press/hover) ────────────────────────────
+class _HoverNoteCard extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+
+  const _HoverNoteCard({required this.child, required this.onTap});
+
+  @override
+  State<_HoverNoteCard> createState() => _HoverNoteCardState();
+}
+
+class _HoverNoteCardState extends State<_HoverNoteCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 120),
+      reverseDuration: const Duration(milliseconds: 200),
+    );
+    _scaleAnim = Tween<double>(begin: 1.0, end: 0.965).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _ctrl.forward(),
+      onTapUp: (_) {
+        _ctrl.reverse();
+        widget.onTap();
+      },
+      onTapCancel: () => _ctrl.reverse(),
+      child: AnimatedBuilder(
+        animation: _scaleAnim,
+        builder: (context, child) =>
+            Transform.scale(scale: _scaleAnim.value, child: child),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+// ─── Animated Note Item (staggered entrance) ─────────────────────────────────
 class _AnimatedNoteItem extends StatefulWidget {
   final Widget child;
   final int index;
@@ -939,7 +921,8 @@ class _AnimatedNoteItemState extends State<_AnimatedNoteItem>
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.15),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+    ).animate(
+        CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     // Stagger by index
     Future.delayed(Duration(milliseconds: 50 * widget.index.clamp(0, 8)), () {
