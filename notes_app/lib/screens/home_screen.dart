@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/note.dart';
-import '../services/app_state.dart';
-import '../widgets/note_card.dart';
+import '../providers/note_provider.dart';
 import '../widgets/empty_state.dart';
 import 'create_edit_note_screen.dart';
 import 'note_detail_screen.dart';
 import 'settings_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
+class _HomeScreenState extends ConsumerState<HomeScreen>
     with TickerProviderStateMixin {
-  final AppState _appState = AppState();
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -34,14 +33,13 @@ class _HomeScreenState extends State<HomeScreen>
   late Animation<double> _headerFadeAnimation;
   late Animation<double> _searchWidthAnimation;
 
-  // Pastel card colors cycling
   static const List<Color> _cardColors = [
-    Color(0xFFFFE8E8), // soft rose
-    Color(0xFFFFF3E0), // soft amber
-    Color(0xFFE8F5E9), // soft mint
-    Color(0xFFE8EAF6), // soft lavender
-    Color(0xFFFCE4EC), // soft pink
-    Color(0xFFE0F7FA), // soft cyan
+    Color(0xFFFFE8E8),
+    Color(0xFFFFF3E0),
+    Color(0xFFE8F5E9),
+    Color(0xFFE8EAF6),
+    Color(0xFFFCE4EC),
+    Color(0xFFE0F7FA),
   ];
 
   @override
@@ -105,22 +103,19 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
-  List<Note> get _filteredNotes {
-    var notes = _appState.notes;
-
+  List<Note> _filteredNotes(List<Note> notes) {
+    var filtered = notes;
     if (_showPinnedOnly) {
-      notes = notes.where((note) => note.isFavorite).toList();
+      filtered = filtered.where((note) => note.isFavorite).toList();
     }
-
     if (_searchQuery.isNotEmpty) {
-      notes = notes.where((note) {
+      filtered = filtered.where((note) {
         return note.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
             note.content.toLowerCase().contains(_searchQuery.toLowerCase());
       }).toList();
     }
-
-    notes.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-    return notes;
+    filtered.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return filtered;
   }
 
   void _onSearchFocusChanged(bool focused) {
@@ -134,22 +129,20 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Light pastel theme matching the screenshot
+    final notes = ref.watch(noteProvider);
+    final filteredNotes = _filteredNotes(notes);
+
     const bgColor = Color(0xFFF3F2F8);
-    const cardBg = Colors.white;
     const accentColor = Color(0xFF6C63FF);
-    const accentLight = Color(0xFFB8AFFF);
     const textPrimary = Color(0xFF1A1A2E);
     const textSecondary = Color(0xFF888899);
-    const surfaceColor = Color(0xFFEEEDF4);
-    const bool isDark = false;
 
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
-            // ─── Header ───────────────────────────────────────────────
+            // Header
             AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               decoration: BoxDecoration(
@@ -191,18 +184,13 @@ class _HomeScreenState extends State<HomeScreen>
                                   ),
                                 ),
                                 const SizedBox(height: 2),
-                                ValueListenableBuilder<List<Note>>(
-                                  valueListenable: _appState.notesNotifier,
-                                  builder: (context, notes, _) {
-                                    return Text(
-                                      '${notes.length} note${notes.length == 1 ? '' : 's'}',
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        color: textSecondary,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    );
-                                  },
+                                Text(
+                                  '${notes.length} note${notes.length == 1 ? '' : 's'}',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: textSecondary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ],
                             ),
@@ -211,7 +199,6 @@ class _HomeScreenState extends State<HomeScreen>
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 18),
 
                     // Search bar
@@ -224,9 +211,7 @@ class _HomeScreenState extends State<HomeScreen>
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
                             decoration: BoxDecoration(
-                              color: _isSearchFocused
-                                  ? Colors.white
-                                  : Colors.white,
+                              color: Colors.white,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
                                 color: _isSearchFocused
@@ -301,113 +286,92 @@ class _HomeScreenState extends State<HomeScreen>
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 16),
 
-                    // Filter chips with counts
+                    // Filter chips
                     SlideTransition(
                       position: _headerSlideAnimation,
                       child: FadeTransition(
                         opacity: _headerFadeAnimation,
-                        child: ValueListenableBuilder<List<Note>>(
-                          valueListenable: _appState.notesNotifier,
-                          builder: (context, notes, _) {
-                            final pinnedCount =
-                                notes.where((n) => n.isFavorite).length;
-                            return Row(
-                              children: [
-                                _buildPillChip(
-                                  label: 'All Notes',
-                                  count: notes.length,
-                                  isSelected: !_showPinnedOnly,
-                                  accentColor: accentColor,
-                                  onTap: () =>
-                                      setState(() => _showPinnedOnly = false),
-                                ),
-                                const SizedBox(width: 10),
-                                _buildPillChip(
-                                  label: 'Favorites',
-                                  count: pinnedCount,
-                                  isSelected: _showPinnedOnly,
-                                  accentColor: accentColor,
-                                  onTap: () =>
-                                      setState(() => _showPinnedOnly = true),
-                                ),
-                              ],
-                            );
-                          },
+                        child: Row(
+                          children: [
+                            _buildPillChip(
+                              label: 'All Notes',
+                              count: notes.length,
+                              isSelected: !_showPinnedOnly,
+                              accentColor: accentColor,
+                              onTap: () =>
+                                  setState(() => _showPinnedOnly = false),
+                            ),
+                            const SizedBox(width: 10),
+                            _buildPillChip(
+                              label: 'Favorites',
+                              count: notes.where((n) => n.isFavorite).length,
+                              isSelected: _showPinnedOnly,
+                              accentColor: accentColor,
+                              onTap: () =>
+                                  setState(() => _showPinnedOnly = true),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 8),
                   ],
                 ),
               ),
             ),
 
-            // ─── Note List ────────────────────────────────────────────
+            // Note list
             Expanded(
-              child: ValueListenableBuilder<List<Note>>(
-                valueListenable: _appState.notesNotifier,
-                builder: (context, notes, child) {
-                  final filteredNotes = _filteredNotes;
-
-                  if (filteredNotes.isEmpty) {
-                    return _buildEmptyState(
-                        textPrimary, textSecondary, accentColor);
-                  }
-
-                  return ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 110),
-                    itemCount: filteredNotes.length,
-                    itemBuilder: (context, index) {
-                      final note = filteredNotes[index];
-                      final cardColor = _cardColors[index % _cardColors.length];
-                      return _AnimatedNoteItem(
-                        key: Key('item_$index'),
-                        index: index,
-                        child: _buildPastelNoteCard(
-                          note: note,
-                          cardColor: cardColor,
-                          textPrimary: textPrimary,
-                          textSecondary: textSecondary,
-                          accentColor: accentColor,
-                          onDelete: () {
-                            HapticFeedback.mediumImpact();
-                            _appState.deleteNote(note.id);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Row(
-                                  children: [
-                                    Icon(Icons.check_circle_outline,
-                                        color: Colors.white, size: 18),
-                                    SizedBox(width: 10),
-                                    Text('Note deleted'),
-                                  ],
+              child: filteredNotes.isEmpty
+                  ? _buildEmptyState(textPrimary, textSecondary, accentColor)
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 110),
+                      itemCount: filteredNotes.length,
+                      itemBuilder: (context, index) {
+                        final note = filteredNotes[index];
+                        final cardColor = _cardColors[index % _cardColors.length];
+                        return _AnimatedNoteItem(
+                          key: Key('item_$index'),
+                          index: index,
+                          child: _buildPastelNoteCard(
+                            note: note,
+                            cardColor: cardColor,
+                            textPrimary: textPrimary,
+                            textSecondary: textSecondary,
+                            accentColor: accentColor,
+                            onDelete: () {
+                              HapticFeedback.mediumImpact();
+                              ref.read(noteProvider.notifier).deleteNote(note.id);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Row(
+                                    children: [
+                                      Icon(Icons.check_circle_outline,
+                                          color: Colors.white, size: 18),
+                                      SizedBox(width: 10),
+                                      Text('Note deleted'),
+                                    ],
+                                  ),
+                                  backgroundColor: const Color(0xFF2D2D3A),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14)),
+                                  margin: const EdgeInsets.all(16),
+                                  duration: const Duration(seconds: 2),
                                 ),
-                                backgroundColor: const Color(0xFF2D2D3A),
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14)),
-                                margin: const EdgeInsets.all(16),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
       ),
-
-      // ─── FAB ──────────────────────────────────────────────────────
       floatingActionButton: ScaleTransition(
         scale: _fabScaleAnimation,
         child: Container(
@@ -488,7 +452,6 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ─── Menu (···) button ───────────────────────────────────────────
   Widget _buildMenuButton(BuildContext context) {
     return GestureDetector(
       onTap: () {
@@ -526,7 +489,6 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ─── Pill chip with count badge ──────────────────────────────────
   Widget _buildPillChip({
     required String label,
     required int count,
@@ -597,7 +559,6 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ─── Pastel note card ────────────────────────────────────────────
   Widget _buildPastelNoteCard({
     required Note note,
     required Color cardColor,
@@ -646,7 +607,6 @@ class _HomeScreenState extends State<HomeScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title row
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -664,11 +624,9 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Star / pin button
                   _buildStarButton(note, accentColor),
                 ],
               ),
-
               if (note.content.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(
@@ -683,10 +641,7 @@ class _HomeScreenState extends State<HomeScreen>
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
-
               const SizedBox(height: 14),
-
-              // Bottom row: time + trash
               Row(
                 children: [
                   const Icon(
@@ -704,7 +659,6 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                   ),
                   const Spacer(),
-                  // Trash button
                   GestureDetector(
                     onTap: onDelete,
                     child: Container(
@@ -729,12 +683,11 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ─── Star / pin button ───────────────────────────────────────────
   Widget _buildStarButton(Note note, Color accentColor) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        _appState.toggleFavorite(note.id);
+        ref.read(noteProvider.notifier).toggleFavorite(note.id);
       },
       child: TweenAnimationBuilder<double>(
         key: ValueKey(note.isFavorite),
@@ -757,8 +710,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildEmptyState(
-      Color textPrimary, Color textSecondary, Color accentColor) {
+  Widget _buildEmptyState(Color textPrimary, Color textSecondary, Color accentColor) {
     return Center(
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0.0, end: 1.0),
@@ -823,21 +775,18 @@ class _HomeScreenState extends State<HomeScreen>
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final diff = now.difference(date);
-
     if (diff.inMinutes < 1) return 'Just now';
     if (diff.inHours < 1) return '${diff.inMinutes}m ago';
     if (diff.inDays < 1) return '${diff.inHours}h ago';
     if (diff.inDays < 7) return '${diff.inDays}d ago';
-
     return '${date.day}/${date.month}/${date.year}';
   }
 }
 
-// ─── Hover-effect wrapper (scales on press/hover) ────────────────────────────
+// --- Supporting widgets for animations (unchanged) ---
 class _HoverNoteCard extends StatefulWidget {
   final Widget child;
   final VoidCallback onTap;
-
   const _HoverNoteCard({required this.child, required this.onTap});
 
   @override
@@ -887,16 +836,10 @@ class _HoverNoteCardState extends State<_HoverNoteCard>
   }
 }
 
-// ─── Animated Note Item (staggered entrance) ─────────────────────────────────
 class _AnimatedNoteItem extends StatefulWidget {
   final Widget child;
   final int index;
-
-  const _AnimatedNoteItem({
-    super.key,
-    required this.child,
-    required this.index,
-  });
+  const _AnimatedNoteItem({super.key, required this.child, required this.index});
 
   @override
   State<_AnimatedNoteItem> createState() => _AnimatedNoteItemState();
@@ -915,16 +858,11 @@ class _AnimatedNoteItemState extends State<_AnimatedNoteItem>
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
-
-    _fadeAnimation =
-        CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.15),
       end: Offset.zero,
-    ).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-
-    // Stagger by index
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
     Future.delayed(Duration(milliseconds: 50 * widget.index.clamp(0, 8)), () {
       if (mounted) _controller.forward();
     });

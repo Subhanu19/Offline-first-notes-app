@@ -1,30 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/note.dart';
-import '../services/app_state.dart';
-import '../utils/date_utils.dart';
+import '../providers/note_provider.dart';
 import 'create_edit_note_screen.dart';
 
-class NoteDetailScreen extends StatefulWidget {
+class NoteDetailScreen extends ConsumerStatefulWidget {
   final Note note;
-
   const NoteDetailScreen({super.key, required this.note});
 
   @override
-  State<NoteDetailScreen> createState() => _NoteDetailScreenState();
+  ConsumerState<NoteDetailScreen> createState() => _NoteDetailScreenState();
 }
 
-class _NoteDetailScreenState extends State<NoteDetailScreen>
+class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen>
     with TickerProviderStateMixin {
-  final AppState _appState = AppState();
-
   late AnimationController _enterController;
   late AnimationController _pinController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _pinScaleAnimation;
-
-  // Local pin state so UI reflects toggle immediately
   late bool _isPinned;
 
   @override
@@ -36,26 +31,17 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    _fadeAnimation = CurvedAnimation(
-      parent: _enterController,
-      curve: Curves.easeOut,
-    );
+    _fadeAnimation = CurvedAnimation(parent: _enterController, curve: Curves.easeOut);
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.06),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _enterController,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(CurvedAnimation(parent: _enterController, curve: Curves.easeOutCubic));
 
     _pinController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    _pinScaleAnimation = CurvedAnimation(
-      parent: _pinController,
-      curve: Curves.elasticOut,
-    );
+    _pinScaleAnimation = CurvedAnimation(parent: _pinController, curve: Curves.elasticOut);
     _pinController.value = 1.0;
 
     _enterController.forward();
@@ -72,33 +58,27 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
     final result = await Navigator.push(
       context,
       PageRouteBuilder(
-        pageBuilder: (_, animation, __) =>
-            CreateEditNoteScreen(note: widget.note),
+        pageBuilder: (_, animation, __) => CreateEditNoteScreen(note: widget.note),
         transitionsBuilder: (_, animation, __, child) {
           return SlideTransition(
             position: Tween<Offset>(
               begin: const Offset(0, 1),
               end: Offset.zero,
-            ).animate(
-                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+            ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
             child: child,
           );
         },
       ),
     );
-    if (result == true && mounted) {
-      Navigator.pop(context);
-    }
+    if (result == true && mounted) Navigator.pop(context);
   }
 
   void _deleteNote() {
     HapticFeedback.mediumImpact();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dialogBg = isDark ? const Color(0xFF1C1C24) : Colors.white;
-    final textPrimary =
-        isDark ? const Color(0xFFEDEDFF) : const Color(0xFF1A1A2E);
-    final textSecondary =
-        isDark ? const Color(0xFF8888AA) : const Color(0xFF888899);
+    final textPrimary = isDark ? const Color(0xFFEDEDFF) : const Color(0xFF1A1A2E);
+    final textSecondary = isDark ? const Color(0xFF8888AA) : const Color(0xFF888899);
 
     showDialog(
       context: context,
@@ -127,8 +107,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
                   color: Colors.red.withOpacity(0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.delete_rounded,
-                    color: Colors.red, size: 26),
+                child: const Icon(Icons.delete_rounded, color: Colors.red, size: 26),
               ),
               const SizedBox(height: 16),
               Text(
@@ -144,11 +123,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
               Text(
                 'This note will be permanently removed and cannot be recovered.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: textSecondary,
-                  height: 1.45,
-                ),
+                style: TextStyle(fontSize: 14, color: textSecondary, height: 1.45),
               ),
               const SizedBox(height: 24),
               Row(
@@ -159,20 +134,11 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF2A2A36)
-                              : const Color(0xFFF0EFF6),
+                          color: isDark ? const Color(0xFF2A2A36) : const Color(0xFFF0EFF6),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         alignment: Alignment.center,
-                        child: Text(
-                          'Cancel',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: textPrimary,
-                          ),
-                        ),
+                        child: Text('Cancel', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary)),
                       ),
                     ),
                   ),
@@ -180,23 +146,21 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
                   Expanded(
                     child: GestureDetector(
                       onTap: () {
-                        _appState.deleteNote(widget.note.id);
-                        Navigator.pop(context); // close dialog
-                        Navigator.pop(context); // close detail
+                        ref.read(noteProvider.notifier).deleteNote(widget.note.id);
+                        Navigator.pop(context);
+                        Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: const Row(
                               children: [
-                                Icon(Icons.check_circle_outline,
-                                    color: Colors.white, size: 18),
+                                Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
                                 SizedBox(width: 10),
                                 Text('Note deleted'),
                               ],
                             ),
                             backgroundColor: const Color(0xFF2D2D3A),
                             behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                             margin: const EdgeInsets.all(16),
                             duration: const Duration(seconds: 2),
                           ),
@@ -209,14 +173,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
                           borderRadius: BorderRadius.circular(14),
                         ),
                         alignment: Alignment.center,
-                        child: const Text(
-                          'Delete',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.red,
-                          ),
-                        ),
+                        child: const Text('Delete', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.red)),
                       ),
                     ),
                   ),
@@ -231,7 +188,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
 
   void _togglePin() {
     HapticFeedback.lightImpact();
-    _appState.toggleFavorite(widget.note.id);
+    ref.read(noteProvider.notifier).toggleFavorite(widget.note.id);
     setState(() => _isPinned = !_isPinned);
     _pinController.reset();
     _pinController.forward();
@@ -252,15 +209,11 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF0F0F13) : const Color(0xFFF5F4F8);
     final cardBg = isDark ? const Color(0xFF1C1C24) : Colors.white;
-    final surfaceColor =
-        isDark ? const Color(0xFF16161F) : const Color(0xFFEEEDF4);
+    final surfaceColor = isDark ? const Color(0xFF16161F) : const Color(0xFFEEEDF4);
     final accentColor = const Color(0xFF7C6FE0);
-    final textPrimary =
-        isDark ? const Color(0xFFEDEDFF) : const Color(0xFF1A1A2E);
-    final textSecondary =
-        isDark ? const Color(0xFF8888AA) : const Color(0xFF888899);
+    final textPrimary = isDark ? const Color(0xFFEDEDFF) : const Color(0xFF1A1A2E);
+    final textSecondary = isDark ? const Color(0xFF8888AA) : const Color(0xFF888899);
 
-    // Word count
     final wordCount = widget.note.content.trim().isEmpty
         ? 0
         : widget.note.content.trim().split(RegExp(r'\s+')).length;
@@ -271,14 +224,12 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
       body: SafeArea(
         child: Column(
           children: [
-            // ─── Top Bar ─────────────────────────────────────────────
             FadeTransition(
               opacity: _fadeAnimation,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Row(
                   children: [
-                    // Back
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
@@ -289,26 +240,19 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black
-                                  .withOpacity(isDark ? 0.3 : 0.06),
+                              color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
                           ],
                         ),
-                        child: Icon(Icons.arrow_back_ios_new_rounded,
-                            size: 18, color: textPrimary),
+                        child: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: textPrimary),
                       ),
                     ),
-
                     const SizedBox(width: 14),
-
-                    // Title
                     Expanded(
                       child: Text(
-                        widget.note.title.isEmpty
-                            ? 'Untitled'
-                            : widget.note.title,
+                        widget.note.title.isEmpty ? 'Untitled' : widget.note.title,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -319,10 +263,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-
                     const SizedBox(width: 10),
-
-                    // Pin button
                     ScaleTransition(
                       scale: _pinScaleAnimation,
                       child: GestureDetector(
@@ -332,39 +273,29 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: _isPinned
-                                ? accentColor.withOpacity(0.15)
-                                : cardBg,
+                            color: _isPinned ? accentColor.withOpacity(0.15) : cardBg,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: _isPinned
-                                  ? accentColor.withOpacity(0.3)
-                                  : Colors.transparent,
+                              color: _isPinned ? accentColor.withOpacity(0.3) : Colors.transparent,
                               width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black
-                                    .withOpacity(isDark ? 0.3 : 0.06),
+                                color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
                             ],
                           ),
                           child: Icon(
-                            _isPinned
-                                ? Icons.push_pin_rounded
-                                : Icons.push_pin_outlined,
+                            _isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
                             size: 18,
                             color: _isPinned ? accentColor : textSecondary,
                           ),
                         ),
                       ),
                     ),
-
                     const SizedBox(width: 8),
-
-                    // Edit button
                     GestureDetector(
                       onTap: _editNote,
                       child: Container(
@@ -375,21 +306,16 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black
-                                  .withOpacity(isDark ? 0.3 : 0.06),
+                              color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
                           ],
                         ),
-                        child: Icon(Icons.edit_rounded,
-                            size: 18, color: textPrimary),
+                        child: Icon(Icons.edit_rounded, size: 18, color: textPrimary),
                       ),
                     ),
-
                     const SizedBox(width: 8),
-
-                    // Delete button
                     GestureDetector(
                       onTap: _deleteNote,
                       child: Container(
@@ -400,25 +326,20 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black
-                                  .withOpacity(isDark ? 0.2 : 0.04),
+                              color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.delete_rounded,
-                            size: 18, color: Colors.red),
+                        child: const Icon(Icons.delete_rounded, size: 18, color: Colors.red),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
-
-            // ─── Body ─────────────────────────────────────────────────
             Expanded(
               child: SlideTransition(
                 position: _slideAnimation,
@@ -429,17 +350,14 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ── Meta row ────────────────────────────────────
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
                             color: cardBg,
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black
-                                    .withOpacity(isDark ? 0.2 : 0.04),
+                                color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
                                 blurRadius: 10,
                                 offset: const Offset(0, 3),
                               ),
@@ -479,10 +397,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
                             ],
                           ),
                         ),
-
                         const SizedBox(height: 16),
-
-                        // ── Content card ────────────────────────────────
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(20),
@@ -491,8 +406,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black
-                                    .withOpacity(isDark ? 0.22 : 0.05),
+                                color: Colors.black.withOpacity(isDark ? 0.22 : 0.05),
                                 blurRadius: 16,
                                 offset: const Offset(0, 4),
                               ),
@@ -501,7 +415,6 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Content label
                               Row(
                                 children: [
                                   Container(
@@ -526,14 +439,10 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
                               ),
                               const SizedBox(height: 16),
                               SelectableText(
-                                widget.note.content.isEmpty
-                                    ? 'No content.'
-                                    : widget.note.content,
+                                widget.note.content.isEmpty ? 'No content.' : widget.note.content,
                                 style: TextStyle(
                                   fontSize: 15.5,
-                                  color: widget.note.content.isEmpty
-                                      ? textSecondary
-                                      : textPrimary,
+                                  color: widget.note.content.isEmpty ? textSecondary : textPrimary,
                                   height: 1.75,
                                   fontWeight: FontWeight.w400,
                                   letterSpacing: 0.1,
@@ -542,10 +451,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
                             ],
                           ),
                         ),
-
                         const SizedBox(height: 24),
-
-                        // ── Action buttons ──────────────────────────────
                         Row(
                           children: [
                             Expanded(
@@ -595,24 +501,13 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-      ),
+      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(20)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 12, color: color),
           const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w600,
-              color: color,
-              letterSpacing: 0.1,
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: color, letterSpacing: 0.1)),
         ],
       ),
     );
@@ -628,13 +523,9 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
     required Color textPrimary,
     required bool isDark,
   }) {
-    final bg = isDestructive
-        ? Colors.red.withOpacity(0.08)
-        : surfaceColor;
+    final bg = isDestructive ? Colors.red.withOpacity(0.08) : surfaceColor;
     final fg = isDestructive ? Colors.red : textPrimary;
-    final borderColor = isDestructive
-        ? Colors.red.withOpacity(0.2)
-        : Colors.transparent;
+    final borderColor = isDestructive ? Colors.red.withOpacity(0.2) : Colors.transparent;
 
     return GestureDetector(
       onTap: onTap,
@@ -650,15 +541,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen>
           children: [
             Icon(icon, size: 18, color: fg),
             const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: fg,
-                letterSpacing: 0.1,
-              ),
-            ),
+            Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: fg, letterSpacing: 0.1)),
           ],
         ),
       ),
